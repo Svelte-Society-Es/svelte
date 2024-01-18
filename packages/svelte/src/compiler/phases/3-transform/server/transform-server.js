@@ -187,10 +187,12 @@ function process_children(nodes, parent, { visit, state }) {
 			const node = sequence[i];
 			if (node.type === 'Text' || node.type === 'Comment') {
 				let last = /** @type {import('estree').TemplateElement} */ (quasis.at(-1));
-				last.value.raw +=
-					node.type === 'Comment'
-						? `<!--${node.data}-->`
-						: sanitize_template_string(escape_html(node.data));
+				last.value.raw += node.type === 'Comment' ? `<!--${node.data}-->` : escape_html(node.data);
+			} else if (node.type === 'ExpressionTag' && node.expression.type === 'Literal') {
+				let last = /** @type {import('estree').TemplateElement} */ (quasis.at(-1));
+				if (node.expression.value != null) {
+					last.value.raw += escape_html(node.expression.value + '');
+				}
 			} else if (node.type === 'Anchor') {
 				expressions.push(node.id);
 				quasis.push(b.quasi('', i + 1 === sequence.length));
@@ -349,11 +351,11 @@ function get_assignment_value(node, { state, visit }) {
 		return operator === '='
 			? /** @type {import('estree').Expression} */ (visit(node.right))
 			: // turn something like x += 1 into x = x + 1
-			  b.binary(
+				b.binary(
 					/** @type {import('estree').BinaryOperator} */ (operator.slice(0, -1)),
 					serialize_get_binding(node.left, state),
 					/** @type {import('estree').Expression} */ (visit(node.right))
-			  );
+				);
 	} else {
 		return /** @type {import('estree').Expression} */ (visit(node.right));
 	}
@@ -705,7 +707,7 @@ function serialize_attribute_value(
 					/** @type {import('estree').Expression} */ (context.visit(node.expression))
 				)
 			);
-			if (i === attribute_value.length) {
+			if (i === attribute_value.length || attribute_value[i]?.type !== 'Text') {
 				quasis.push(b.quasi('', true));
 			}
 		}
@@ -778,7 +780,7 @@ function serialize_element_spread_attributes(
 						b.id('join')
 					),
 					b.literal(' ')
-			  )
+				)
 			: b.literal('');
 		args.push(
 			b.object([
@@ -931,7 +933,7 @@ function serialize_inline_component(node, component_name, context) {
 			: b.call(
 					'$.spread_props',
 					b.array(props_and_spreads.map((p) => (Array.isArray(p) ? b.object(p) : p)))
-			  );
+				);
 
 	/** @type {import('estree').Statement} */
 	let statement = b.stmt(
@@ -940,7 +942,7 @@ function serialize_inline_component(node, component_name, context) {
 				? b.call(
 						'$.validate_component',
 						typeof component_name === 'string' ? b.id(component_name) : component_name
-				  )
+					)
 				: component_name,
 			b.id('$$payload'),
 			props_expression
@@ -1032,7 +1034,7 @@ const javascript_visitors_legacy = {
 							'$.value_or_fallback',
 							prop,
 							/** @type {import('estree').Expression} */ (visit(declarator.init))
-					  )
+						)
 					: prop;
 
 				declarations.push(b.declarator(declarator.id, init));
@@ -1120,9 +1122,10 @@ const template_visitors = {
 		state.init.push(anchor);
 		state.template.push(t_expression(anchor_id));
 
+		const expression = /** @type {import('estree').Expression} */ (context.visit(node.expression));
 		const snippet_function = state.options.dev
-			? b.call('$.validate_snippet', node.expression)
-			: node.expression;
+			? b.call('$.validate_snippet', expression)
+			: expression;
 		if (node.argument) {
 			state.template.push(
 				t_statement(
@@ -1176,7 +1179,7 @@ const template_visitors = {
 							template: [],
 							init: []
 						}
-				  }
+					}
 				: { ...context, state };
 
 		const { hoisted, trimmed } = clean_nodes(
@@ -1449,9 +1452,6 @@ const template_visitors = {
 			context.state.init.push(b.stmt(b.call('$.add_snippet_symbol', node.expression)));
 		}
 	},
-	BindDirective(node, context) {
-		// TODO
-	},
 	Component(node, context) {
 		const state = context.state;
 		const [dec, id] = serialize_anchor(state);
@@ -1500,9 +1500,9 @@ const template_visitors = {
 							b.let(
 								node.expression.type === 'ObjectExpression'
 									? // @ts-expect-error types don't match, but it can't contain spread elements and the structure is otherwise fine
-									  b.object_pattern(node.expression.properties)
+										b.object_pattern(node.expression.properties)
 									: // @ts-expect-error types don't match, but it can't contain spread elements and the structure is otherwise fine
-									  b.array_pattern(node.expression.elements),
+										b.array_pattern(node.expression.elements),
 								b.member(b.id('$$slotProps'), b.id(node.name))
 							),
 							b.return(b.object(bindings.map((binding) => b.init(binding.node.name, binding.node))))
@@ -1691,9 +1691,19 @@ function serialize_element_attributes(node, context) {
 			if (binding?.omit_in_ssr) continue;
 
 			if (ContentEditableBindings.includes(attribute.name)) {
-				content = { escape: false, expression: attribute.expression };
+				content = {
+					escape: false,
+					expression: /** @type {import('estree').Expression} */ (
+						context.visit(attribute.expression)
+					)
+				};
 			} else if (attribute.name === 'value' && node.name === 'textarea') {
-				content = { escape: true, expression: attribute.expression };
+				content = {
+					escape: true,
+					expression: /** @type {import('estree').Expression} */ (
+						context.visit(attribute.expression)
+					)
+				};
 			} else if (attribute.name === 'group') {
 				const value_attribute = /** @type {import('#compiler').Attribute | undefined} */ (
 					node.attributes.find((attr) => attr.type === 'Attribute' && attr.name === 'value')
@@ -1718,12 +1728,12 @@ function serialize_element_attributes(node, context) {
 								? b.call(
 										b.member(attribute.expression, b.id('includes')),
 										serialize_attribute_value(value_attribute.value, context)
-								  )
+									)
 								: b.binary(
 										'===',
 										attribute.expression,
 										serialize_attribute_value(value_attribute.value, context)
-								  ),
+									),
 							metadata: {
 								contains_call_expression: false,
 								dynamic: false
