@@ -1,73 +1,73 @@
 ---
-title: Svelte components
+title: Componentes de Svelte
 ---
 
-Components are the building blocks of Svelte applications. They are written into `.svelte` files, using a superset of HTML.
+Los componentes son los bloques de construcción de las aplicaciones Svelte. Se escriben como archivos `.svelte`, utilizando un superconjunto de HTML.
 
-All three sections — script, styles and markup — are optional.
+Las tres secciones — script, estilos y marcado — son opcionales.
 
 ```svelte
 <script>
-	// logic goes here
+	// La lógica va aquí
 </script>
 
-<!-- markup (zero or more items) goes here -->
+<!-- El marcado (cero o más items) va aquí -->
 
 <style>
-	/* styles go here */
+	/* Los estilos van aquí. */
 </style>
 ```
 
 ## &lt;script&gt;
 
-A `<script>` block contains JavaScript that runs when a component instance is created. Variables declared (or imported) at the top level are 'visible' from the component's markup. There are four additional rules:
+Un bloque `<script>` lleva el código JavaScript que se ejecuta cuando se crea una instancia del componente. Las variables declaradas (o importadas) en la parte superior son "visibles" desde el marcado del componente. Existen cuatro reglas adicionales:
 
-### 1. `export` creates a component prop
+### 1. `export` crea un componente con props
 
-Svelte uses the `export` keyword to mark a variable declaration as a _property_ or _prop_, which means it becomes accessible to consumers of the component (see the section on [attributes and props](/docs/basic-markup#attributes-and-props) for more information).
+Svelte usa la palabra clave `export` para marcar una declaración de variable como _propiedad_ o _prop_, lo que significa que se convierte en accesible para los consumidores del componente (véase la sección sobre [atributos y props](/docs/basic-markup#attributes-and-props) para más información).
 
 ```svelte
 <script>
 	export let foo;
 
-	// Values that are passed in as props
-	// are immediately available
+	// Los valores pasados como props
+	// están disponibles inmediatamente
 	console.log({ foo });
 </script>
 ```
 
-You can specify a default initial value for a prop. It will be used if the component's consumer doesn't specify the prop on the component (or if its initial value is `undefined`) when instantiating the component. Note that if the values of props are subsequently updated, then any prop whose value is not specified will be set to `undefined` (rather than its initial value).
+Se puede especificar un valor inicial por defecto para una prop. Se utilizará si el consumidor del componente no especifica el prop en el componente (o si su valor inicial es `undefined`) al instanciar el componente. Tenga en cuenta que si los valores de las props se actualizan posteriormente, entonces cualquier prop cuyo valor no se especifique se establecerá a `undefined` (en lugar de su valor inicial).
 
-In development mode (see the [compiler options](/docs/svelte-compiler#compile)), a warning will be printed if no default initial value is provided and the consumer does not specify a value. To squelch this warning, ensure that a default initial value is specified, even if it is `undefined`.
+En modo de desarrollo, se mostrará una advertencia si no se proporciona un valor inicial por defecto y si el consumidor no especifica un valor (vea las [opciones de compilación](/docs/svelte-compiler#compile)). Para silenciar esta advertencia, asegúrese de que se especifica un valor inicial por defecto, incluso si es `undefined`.
 
 ```svelte
 <script>
-	export let bar = 'optional default initial value';
+	export let bar = 'valor inicial por defecto, opcional';
 	export let baz = undefined;
 </script>
 ```
 
-If you export a `const`, `class` or `function`, it is readonly from outside the component. Functions are valid prop values, however, as shown below.
+Si exporta una `const`, `class` o `function`, es de sólo lectura desde fuera del componente. Sin embargo, las funciones son valores prop válidos, como se muestra a continuación.
 
 ```svelte
 <!--- file: App.svelte --->
 <script>
-	// these are readonly
+	// estos son de sólo lectura
 	export const thisIs = 'readonly';
 
 	/** @param {string} name */
 	export function greet(name) {
-		alert(`hello ${name}!`);
+		alert(`Hola, ${name}!`);
 	}
 
-	// this is a prop
+	// esto es una prop
 	export let format = (n) => n.toFixed(2);
 </script>
 ```
 
-Readonly props can be accessed as properties on the element, tied to the component using [`bind:this` syntax](/docs/component-directives#bind-this).
+Se puede acceder a las props de sólo lectura como propiedades del elemento, que estén viculadas al componente mediante [la sintaxis `bind:this`](/docs/component-directives#bind-this).
 
-You can use reserved words as prop names.
+Puede utilizar palabras reservadas como nombres de props.
 
 ```svelte
 <!--- file: App.svelte --->
@@ -75,53 +75,53 @@ You can use reserved words as prop names.
 	/** @type {string} */
 	let className;
 
-	// creates a `class` property, even
-	// though it is a reserved word
+	// crea una propiedad `class`, aunque
+	// sea una palabra reservada
 	export { className as class };
 </script>
 ```
 
-### 2. Assignments are 'reactive'
+### 2. Las asignaciones son 'reactivas'
 
-To change component state and trigger a re-render, just assign to a locally declared variable.
+Para cambiar el estado de un componente y volver a renderizarlo, basta con asignarlo a una variable declarada localmente.
 
-Update expressions (`count += 1`) and property assignments (`obj.x = y`) have the same effect.
+Las expresiones de actualización (`count += 1`) y las asignaciones de propiedades (`obj.x = y`) tienen el mismo efecto.
 
 ```svelte
 <script>
 	let count = 0;
 
 	function handleClick() {
-		// calling this function will trigger an
-		// update if the markup references `count`
+		// La llamada a esta función provocará una
+		// actualización si el marcado hace referencia a `count`
 		count = count + 1;
 	}
 </script>
 ```
 
-Because Svelte's reactivity is based on assignments, using array methods like `.push()` and `.splice()` won't automatically trigger updates. A subsequent assignment is required to trigger the update. This and more details can also be found in the [tutorial](https://learn.svelte.dev/tutorial/updating-arrays-and-objects).
+Dado que la reactividad de Svelte se basa en asignaciones, el uso de métodos de array como `.push()` o `.splice()` no activará automáticamente las actualizaciones. Se requiere de una asignación posterior para activar la actualización. Esto y más detalles se pueden encontrar en el [tutorial](https://learn.svelte.dev/tutorial/updating-arrays-and-objects).
 
 ```svelte
 <script>
 	let arr = [0, 1];
 
 	function handleClick() {
-		// this method call does not trigger an update
+		// esta llamada al método no provoca una actualización
 		arr.push(2);
-		// this assignment will trigger an update
-		// if the markup references `arr`
+		// esta asignación provocará una actualización
+		// si el marcado hace referencia a `arr`
 		arr = arr;
 	}
 </script>
 ```
 
-Svelte's `<script>` blocks are run only when the component is created, so assignments within a `<script>` block are not automatically run again when a prop updates. If you'd like to track changes to a prop, see the next example in the following section.
+Los bloques `<script>` de Svelte se ejecutan sólo cuando se crea el componente, por lo que las asignaciones dentro de un bloque `<script>` no se vuelven a ejecutar automáticamente cuando se actualiza una prop. Si desea realizar un seguimiento de los cambios en un componente, consulte el siguiente ejemplo de la siguiente sección.
 
 ```svelte
 <script>
 	export let person;
-	// this will only set `name` on component creation
-	// it will not update when `person` does
+	// esto sólo establecerá `name` en la creación del componente
+	// no se actualizará cuando pase a `person`
 	let { name } = person;
 </script>
 ```
