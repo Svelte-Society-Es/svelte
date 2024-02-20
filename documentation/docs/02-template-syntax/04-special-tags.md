@@ -1,7 +1,5 @@
 ---
-
 title: Etiquetas especiales
-
 ---
 
 ## {@html ...}
