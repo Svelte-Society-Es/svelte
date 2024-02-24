@@ -1,5 +1,5 @@
 ---
-title: Special tags
+title: Etiquetas especiales
 ---
 
 ## {@html ...}
@@ -9,11 +9,11 @@ title: Special tags
 {@html expression}
 ```
 
-In a text expression, characters like `<` and `>` are escaped; however, with HTML expressions, they're not.
+En una expresión de texto, caracteres como `<` y `>` se escapan; sin embargo, con expresiones HTML, no lo son.
 
-The expression should be valid standalone HTML — `{@html "<div>"}content{@html "</div>"}` will _not_ work, because `</div>` is not valid HTML. It also will _not_ compile Svelte code.
+La expresión debe ser HTML válida por sí sola — `{@html "<div>"}contenido{@html "</div>"}` no funcionará, porque `</div>` no es HTML válido. Tampoco compilará código Svelte.
 
-> Svelte does not sanitize expressions before injecting HTML. If the data comes from an untrusted source, you must sanitize it, or you are exposing your users to an XSS vulnerability.
+> Svelte no sanitiza las expresiones antes de inyectar HTML. Si los datos provienen de una fuente no confiable, debes sanitizarlos, o estarás exponiendo a tus usuarios a una vulnerabilidad XSS.
 
 ```svelte
 <div class="blog-post">
@@ -34,7 +34,7 @@ The expression should be valid standalone HTML — `{@html "<div>"}content{@html
 {@debug var1, var2, ..., varN}
 ```
 
-The `{@debug ...}` tag offers an alternative to `console.log(...)`. It logs the values of specific variables whenever they change, and pauses code execution if you have devtools open.
+La etiqueta `{@debug ...}` ofrece una alternativa a `console.log(...)`. Registra los valores de variables específicas cada vez que cambian y pausa la ejecución del código si tienes las herramientas de desarrollo abiertas.
 
 ```svelte
 <script>
@@ -46,24 +46,24 @@ The `{@debug ...}` tag offers an alternative to `console.log(...)`. It logs the 
 
 {@debug user}
 
-<h1>Hello {user.firstname}!</h1>
+<h1>Hola {user.firstname}!</h1>
 ```
 
-`{@debug ...}` accepts a comma-separated list of variable names (not arbitrary expressions).
+`{@debug ...}` acepta una lista de nombres de variables separados por comas (no expresiones arbitrarias).
 
 ```svelte
-<!-- Compiles -->
+<!-- Compila -->
 {@debug user}
 {@debug user1, user2, user3}
 
-<!-- WON'T compile -->
+<!-- NO compila -->
 {@debug user.firstname}
 {@debug myArray[0]}
 {@debug !isReady}
 {@debug typeof user === 'object'}
 ```
 
-The `{@debug}` tag without any arguments will insert a `debugger` statement that gets triggered when _any_ state changes, as opposed to the specified variables.
+La etiqueta `{@debug}` sin argumentos insertará una declaración `debugger` que se activa cuando _any_ estado cambia, en lugar de las variables especificadas.
 
 ## {@const ...}
 
@@ -72,7 +72,7 @@ The `{@debug}` tag without any arguments will insert a `debugger` statement that
 {@const assignment}
 ```
 
-The `{@const ...}` tag defines a local constant.
+La etiqueta `{@const ...}` define una constante local.
 
 ```svelte
 <script>
@@ -85,4 +85,4 @@ The `{@const ...}` tag defines a local constant.
 {/each}
 ```
 
-`{@const}` is only allowed as direct child of `{#if}`, `{:else if}`, `{:else}`, `{#each}`, `{:then}`, `{:catch}`, `<Component />` or `<svelte:fragment />`.
+`{@const}` solo está permitido como hijo directo de `{#if}`, `{:else if}`, `{:else}`, `{#each}`, `{:then}`, `{:catch}`, `<Component />` o `<svelte:fragment />`.
